@@ -211,7 +211,7 @@ __marimo__/
 *.ipynb~    
 
 # Datafiler (valfritt – undvika ladda upp stora dataset)
-data/
+# data/ #Filen är liten, så valde att ladda upp den. 
 
 # OneDrive (för att undvika att synkade cachefiler råkar laddas upp)
 *.tmp
