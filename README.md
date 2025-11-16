@@ -1,5 +1,7 @@
 # Health_study
 
+Python 3.11.9
+
 Reproducera miljön
 
 Projektet använder en virtuell miljö (venv).
