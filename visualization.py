@@ -235,4 +235,3 @@ def plot_all_categorical_bars(df, cols=None):
 
     fig.tight_layout()
     plt.show()
-    return fig
