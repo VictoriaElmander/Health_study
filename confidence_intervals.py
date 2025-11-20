@@ -35,6 +35,21 @@ def ci_prop_normal(prop: float, n: int, level: float = 0.95, clip: bool = True):
 
 # Confidence interval using normal approximation
 def ci_norm(series, confidence = 0.95):
+    """
+    Confidence interval for the mean using the normal approximation.
+
+    Parameters
+    ----------
+    series : array-like or pd.Series
+    confidence : float between 0 and 1
+
+    Returns
+    -------
+    mean : float
+    (lo, hi) : tuple of CI bounds
+    level : int (e.g. 95)
+    """
+
     # Validering
     if not (0 < confidence < 1):
         raise ValueError("confidence måste ligga mellan 0 och 1.")
@@ -64,6 +79,11 @@ def ci_norm(series, confidence = 0.95):
 
 # Confidence interval using bootstrap Percentile CI
 def ci_mean_boot_perc(series, confidence=0.95, n_boot=20_000, random_state=42):
+    """
+    Bootstrap percentile CI for the mean.
+    """
+
+    
     # Validation
     if not (0 < confidence < 1):
         raise ValueError("Confidence must be between 0 and 1.")
@@ -99,6 +119,9 @@ def ci_mean_boot_perc(series, confidence=0.95, n_boot=20_000, random_state=42):
 
 # Confidence interval using bootstrap BCa
 def ci_mean_boot_bca(series, confidence=0.95, n_boot=20_000, random_state=42):
+    """
+    Bootstrap BCa CI for the mean.
+    """
     # Validation
     if not (0 < confidence < 1):
         raise ValueError("Confidence must be between 0 and 1.")
@@ -145,11 +168,15 @@ def ci_mean_boot_bca(series, confidence=0.95, n_boot=20_000, random_state=42):
 
     return mean_x, (lo, hi), level #boot_mean
 
-import pandas as pd
 
 # Skapa jämförelsetabell för CI på riktiga data
 def ci_methods_table(series, confidence=0.95, n_boot=20_000, random_state=42):
-    """ Compare CI results on real data """
+    """
+    Create a comparison table of CI methods for the mean of a given series.
+
+    Returns a DataFrame with columns:
+    ['Metod', 'Medel', 'KI nedre', 'KI övre', 'Nivå (%)']
+    """
     mean_n, (ci_lo_n, ci_hi_n), level_n = ci_norm(series, confidence)
     mean_bp, (ci_lo_bp, ci_hi_bp), level_bp = ci_mean_boot_perc(series, confidence, n_boot, random_state)
     mean_bbca, (ci_lo_bbca, ci_hi_bbca), level_bbca = ci_mean_boot_bca(series, confidence, n_boot, random_state)
