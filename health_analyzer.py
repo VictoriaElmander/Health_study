@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from visualization import plot_hist, get_category_color
 
 
 class HealthAnalyzer:
@@ -97,9 +98,17 @@ class HealthAnalyzer:
             vert=False,
             labels=order,
             patch_artist=True,
-            boxprops=dict(facecolor="lightblue", color="black"),
+            boxprops=dict(color="black"),
             medianprops=dict(color="red"),
         )
+        
+        # färglägg boxarna enligt CATEGORY_COLORS
+        box_colors = [
+            get_category_color(group_col, g, default="lightblue")
+            for g in order
+        ]
+        for patch, c in zip(bp["boxes"], box_colors):
+            patch.set_facecolor(c)
 
         ax.set_xlabel(self.bp_col)
         ax.set_title(title or f"{self.bp_col} by {group_col}")
@@ -154,3 +163,106 @@ class HealthAnalyzer:
         plt.show()
 
         return summary
+    
+
+    def plot_bp_hist(self, bins=30):
+        """
+        Plottar histogram för systoliskt blodtryck.
+        """
+        values = self.df[self.bp_col].dropna()  # 1D-array med bara systoliskt BT
+        
+        fig, ax = plt.subplots(figsize=(6, 3))
+        plot_hist(values, self.bp_col, ax=ax, bins=bins)
+        plt.show()
+
+
+    def plot_bp_hist_by_group(self, group_col, bins=30):
+        """
+        Ritar histogram för systoliskt blodtryck uppdelat på grupper.
+        """
+        groups = self.df[group_col].dropna().unique()
+
+        fig, axes = plt.subplots(1, len(groups), figsize=(6 * len(groups), 4))
+
+        if len(groups) == 1:
+            axes = [axes]
+
+        for ax, g in zip(axes, groups):
+            subset = self.df.loc[self.df[group_col] == g, self.bp_col].dropna()
+            plot_hist(subset, f"{self.bp_col} ({g})", ax=ax, bins=bins)
+
+        plt.tight_layout()
+        plt.show()
+    
+    def plot_bp_hist_overlaid(self, group_col, bins=30, ax=None, show=True):
+        """
+        Överlagrat histogram för systoliskt BT, uppdelat på group_col
+        (t.ex. 'smoker' eller 'sex').
+
+        Om ax är None skapas en ny figur, annars ritas i det givna ax-objektet.
+        """
+        data = self.df[[group_col, self.bp_col]].dropna()
+        groups = data[group_col].unique()
+
+        # gemensamt bin-intervall
+        min_bp = data[self.bp_col].min()
+        max_bp = data[self.bp_col].max()
+        bin_edges = np.linspace(min_bp, max_bp, bins + 1)
+
+        # skapa ax om det inte skickats in
+        #created_fig = None
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(8, 4))
+
+        #colors = ["tab:blue", "tab:orange", "tab:green", "tab:red"]
+
+        for g in groups:
+            subset = data.loc[data[group_col] == g, self.bp_col]
+            color = get_category_color(group_col, g, default="tab:blue")
+
+            ax.hist(
+                subset,
+                bins=bin_edges,
+                alpha=0.5,
+                density=False,
+                label=f"{group_col}: {g}",
+                edgecolor="black",
+                color=color,
+            )
+
+        ax.set_title(f"Överlagrat histogram: {self.bp_col} per {group_col}")
+        ax.set_xlabel(self.bp_col)
+        ax.set_ylabel("Frekvens")
+        ax.grid(alpha=0.3)
+        ax.legend()
+        plt.tight_layout()
+    
+        # returnera så att vi kan använda den om vi vill
+        return ax
+
+
+    def plot_bp_hist_box_grid(self, group_cols=None, bins=30):
+        """
+        Ritar en grid med 3 rader (eller fler) och 2 kolumner:
+        - vänster: överlagrat histogram för systoliskt BT per grupp
+        - höger : boxplot för systoliskt BT per grupp
+        """
+        if group_cols is None:
+            group_cols = ["sex", "smoker", "disease"]
+
+        n_rows = len(group_cols)
+        fig, axes = plt.subplots(n_rows, 2, figsize=(12, 3 * n_rows), squeeze=False)
+
+        for i, col in enumerate(group_cols):
+            ax_hist = axes[i, 0]
+            ax_box  = axes[i, 1]
+
+            # överlagt histogram (använd befintligt ax, show=False)
+            self.plot_bp_hist_overlaid(group_col=col, bins=bins, ax=ax_hist, show=False)
+
+            # boxplot
+            self.plot_bp_box_by_group(col, ax=ax_box,
+                                    title=f"{self.bp_col} by {col}")
+
+        fig.tight_layout()
+        return fig, axes

@@ -205,3 +205,47 @@ def power_curve_by_n(
         n2_list.append(n2)
 
     return total_ns, np.array(power_vals), np.array(n1_list), np.array(n2_list)
+
+
+def summarize_power_effects(effects, power_values, target_power=0.80):
+    """
+    Tar en array av effektstorlekar och motsvarande power-värden
+    och returnerar text + värdet för delta vid 80 % power.
+    """
+    max_power = power_values.max()
+
+    if max_power >= target_power:
+        delta_at_target = float(np.interp(target_power, power_values, effects))
+        message = (
+            f"För att nå {target_power*100:.0f} % power med nuvarande stickprovsstorlek\n"
+            f"krävs en sann effekt på ungefär Δ ≈ {delta_at_target:.2f} mmHg."
+        )
+        return message, delta_at_target
+    else:
+        message = (
+            f"Även vid den största testade effekten (Δ = {effects.max():.2f} mmHg)\n"
+            f"når power inte upp till {target_power*100:.0f} %."
+        )
+        return message, None
+    
+
+def summarize_power_sample_size(total_ns, power_values, target_power=0.80):
+    """
+    Sammanfattar vilken total stickprovsstorlek (N) som krävs 
+    för att uppnå target_power.
+    """
+    max_power = power_values.max()
+
+    if max_power >= target_power:
+        N_at_target = float(np.interp(target_power, power_values, total_ns))
+        message = (
+            f"För att nå {target_power*100:.0f} % power\n"
+            f"behövs ungefär N ≈ {N_at_target:.0f} observationer totalt."
+        )
+        return message, N_at_target
+    else:
+        message = (
+            f"Power når inte {target_power*100:.0f} % inom intervallet "
+            f"N = {total_ns.min()}–{total_ns.max()}."
+        )
+        return message, None
