@@ -1,5 +1,6 @@
 # health_analyzer.py
 
+from matplotlib.pylab import norm
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -47,9 +48,10 @@ class HealthAnalyzer:
         )
 
         # Approximate normal CI: mean ± z * (std / sqrt(n))
-        z = 1.96 if np.isclose(confidence, 0.95) else None
-        if z is None:
-            from scipy.stats import norm
+        if confidence == 0.95:
+            z = 1.96
+        else:
+            from scipy.stats import norm #importera bara om nödvändigt
             z = norm.ppf(0.5 + confidence / 2.0)
 
         summary["ci_lower"] = summary["mean"] - z * summary["std"] / np.sqrt(summary["n"])
@@ -243,7 +245,7 @@ class HealthAnalyzer:
 
     def plot_bp_hist_box_grid(self, group_cols=None, bins=30):
         """
-        Ritar en grid med 3 rader (eller fler) och 2 kolumner:
+        Ritar en grid motsvarande rader för antal groupcols och 2 kolumner:
         - vänster: överlagrat histogram för systoliskt BT per grupp
         - höger : boxplot för systoliskt BT per grupp
         """
@@ -266,3 +268,103 @@ class HealthAnalyzer:
 
         fig.tight_layout()
         return fig, axes
+    
+    def plot_bp_scatter(
+        self,
+        x_col: str,
+        ax: plt.Axes | None = None,
+        hue: str | None = None,
+        title: str | None = None,
+        ):
+        """
+        Scatterplot: systoliskt blodtryck mot en annan variabel (x_col).
+        Optionellt färga efter en kategorisk variabel (hue).
+        """
+        data = self.df[[x_col, self.bp_col] + ([hue] if hue else [])].dropna()
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(6, 4))
+
+        if hue is None:
+            ax.scatter(data[x_col], data[self.bp_col], alpha=0.6, edgecolor="black")
+        else:
+            groups = data[hue].unique()
+            for g in groups:
+                subset = data[data[hue] == g]
+                color = get_category_color(hue, g, default=None)
+                ax.scatter(
+                    subset[x_col],
+                    subset[self.bp_col],
+                    alpha=0.6,
+                    edgecolor="black",
+                    label=f"{hue}: {g}",
+                    color=color,
+                )
+            ax.legend()
+
+        # --- BERÄKNA KORRELATION ---
+        corr = data[[x_col, self.bp_col]].corr().iloc[0, 1]
+
+            # --- LÄGG TILL TEXT I GRAFEN ---
+        ax.text(
+            0.05,
+            0.95,
+            f"r = {corr:.2f}",
+            transform=ax.transAxes,
+            fontsize=12,
+            verticalalignment="top",
+            bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray")
+        )
+
+        ax.set_xlabel(x_col)
+        ax.set_ylabel(self.bp_col)
+        ax.set_title(title or f"{self.bp_col} vs {x_col}")
+        ax.grid(alpha=0.3)
+
+        return ax
+    
+
+    def plot_bp_scatter_grid(
+        self,
+        x_cols=None,
+        hue: str | None = None,
+    ):
+        """
+        Rita scatterplots för systoliskt blodtryck mot flera numeriska variabler
+        i ett grid (2 kolumner).
+
+        Exempel:
+            analyzer.plot_bp_scatter_grid(
+                x_cols=["age", "weight", "height", "cholesterol"],
+                hue="sex"
+            )
+        """
+        if x_cols is None:
+            x_cols = ["age", "weight", "height", "cholesterol"]
+
+        n_plots = len(x_cols)
+        n_cols = 2
+        n_rows = int(np.ceil(n_plots / n_cols))
+
+        fig, axes = plt.subplots(
+            n_rows,
+            n_cols,
+            figsize=(6 * n_cols, 4 * n_rows),
+            squeeze=False,
+        )
+        axes_flat = axes.flatten() 
+
+        for ax, x_col in zip(axes_flat, x_cols):
+            self.plot_bp_scatter(
+                x_col=x_col,
+                ax=ax,
+                hue=hue,
+                title=f"{self.bp_col} vs {x_col}",
+            )
+
+        # Ta bort ev. överblivna rutor om x_cols inte fyller hela griden
+        for j in range(len(x_cols), len(axes_flat)):
+            fig.delaxes(axes_flat[j])
+
+        fig.tight_layout()
+        return fig, axes 

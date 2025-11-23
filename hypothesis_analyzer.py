@@ -41,7 +41,10 @@ class MeanDiffAnalyzer:
     # 1. Kör bootstrap-testet
     # -----------------------------
     def run_bootstrap(self):
-        obs_diff, p_boot, ci_boot, boot_diffs = bootstrap_mean_diff(
+        if self.bootstrap_result is not None:
+            return self.bootstrap_result
+        
+        diff, p_value, ci, boot_diffs = bootstrap_mean_diff(
             self.group1,
             self.group2,
             confidence=self.confidence,
@@ -50,9 +53,9 @@ class MeanDiffAnalyzer:
             random_state=self.random_state,
         )
         self.bootstrap_result = {
-            "diff": obs_diff,
-            "p_value": p_boot,
-            "ci": ci_boot,
+            "diff": diff,
+            "p_value": p_value,
+            "ci": ci,
             "boot_diffs": boot_diffs,
         }
         return self.bootstrap_result
@@ -61,7 +64,10 @@ class MeanDiffAnalyzer:
     # 2. Kör Welch t-test
     # -----------------------------
     def run_welch(self):
-        diff, p_value, ci_welch, t_stat, dof, se = welch_t_test_mean_diff(
+        if self.welch_result is not None:
+            return self.welch_result
+    
+        diff, p_value, ci, t_stat, dof, se = welch_t_test_mean_diff(
             self.group1,
             self.group2,
             confidence=self.confidence,
@@ -70,7 +76,7 @@ class MeanDiffAnalyzer:
         self.welch_result = {
             "diff": diff,
             "p_value": p_value,
-            "ci": ci_welch,
+            "ci": ci,
             "t_stat": t_stat,
             "dof": dof,
             "se": se,
