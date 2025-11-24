@@ -64,6 +64,37 @@ class HealthAnalyzer:
 
         return summary
 
+    def bp_summary_all_categorical(
+        self,
+        group_cols=None,
+        confidence: float = 0.95,
+    ) -> pd.DataFrame:
+        """
+        Skapa EN sammanfattningstabell för systoliskt blodtryck
+        för alla angivna kategoriska variabler.
+
+        Raderna får ett MultiIndex:
+        - nivå 1: variabelnamn (sex, smoker, disease)
+        - nivå 2: nivå i variabeln (t.ex. F, M, Yes, No, True, False)
+        """
+        if group_cols is None:
+            # t.ex. hämta från visualization om du vill återanvända
+            from visualization import CAT_COLS
+            group_cols = CAT_COLS
+
+        frames = {}
+        for col in group_cols:
+            # använder din befintliga funktion
+            summary = self.bp_summary_by_group(col, confidence=confidence)
+            frames[col] = summary
+
+        # concat med keys ger MultiIndex på raderna: (variabel, kategori)
+        combined = pd.concat(frames, names=["Variable", "Level"])
+
+        return combined
+
+
+
     # -------------------------------------------------------
     # 2. Boxplot för systoliskt BT per grupp
     # -------------------------------------------------------
