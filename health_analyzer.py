@@ -1,10 +1,9 @@
 # health_analyzer.py
 
-from matplotlib.pylab import norm
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from visualization import plot_hist, get_category_color
+from visualization import plot_hist, get_category_color, plot_scatter_with_corr, plot_correlation_heatmap, NUM_COLS
 
 
 class HealthAnalyzer:
@@ -269,59 +268,89 @@ class HealthAnalyzer:
         fig.tight_layout()
         return fig, axes
     
+
     def plot_bp_scatter(
         self,
         x_col: str,
         ax: plt.Axes | None = None,
         hue: str | None = None,
         title: str | None = None,
-        ):
-        """
-        Scatterplot: systoliskt blodtryck mot en annan variabel (x_col).
-        Optionellt färga efter en kategorisk variabel (hue).
-        """
+    ):
         data = self.df[[x_col, self.bp_col] + ([hue] if hue else [])].dropna()
 
         if ax is None:
             fig, ax = plt.subplots(figsize=(6, 4))
 
-        if hue is None:
-            ax.scatter(data[x_col], data[self.bp_col], alpha=0.6, edgecolor="black")
-        else:
-            groups = data[hue].unique()
-            for g in groups:
-                subset = data[data[hue] == g]
-                color = get_category_color(hue, g, default=None)
-                ax.scatter(
-                    subset[x_col],
-                    subset[self.bp_col],
-                    alpha=0.6,
-                    edgecolor="black",
-                    label=f"{hue}: {g}",
-                    color=color,
-                )
-            ax.legend()
+        hue_series = data[hue] if hue else None
 
-        # --- BERÄKNA KORRELATION ---
-        corr = data[[x_col, self.bp_col]].corr().iloc[0, 1]
-
-            # --- LÄGG TILL TEXT I GRAFEN ---
-        ax.text(
-            0.05,
-            0.95,
-            f"r = {corr:.2f}",
-            transform=ax.transAxes,
-            fontsize=12,
-            verticalalignment="top",
-            bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray")
+        plot_scatter_with_corr(
+            ax=ax,
+            x=data[x_col],
+            y=data[self.bp_col],
+            x_label=x_col,
+            y_label=self.bp_col,
+            hue=hue_series,
+            title=title or f"{self.bp_col} vs {x_col}",
         )
 
-        ax.set_xlabel(x_col)
-        ax.set_ylabel(self.bp_col)
-        ax.set_title(title or f"{self.bp_col} vs {x_col}")
-        ax.grid(alpha=0.3)
-
         return ax
+
+
+
+
+    # def plot_bp_scatter(
+    #     self,
+    #     x_col: str,
+    #     ax: plt.Axes | None = None,
+    #     hue: str | None = None,
+    #     title: str | None = None,
+    #     ):
+    #     """
+    #     Scatterplot: systoliskt blodtryck mot en annan variabel (x_col).
+    #     Optionellt färga efter en kategorisk variabel (hue).
+    #     """
+    #     data = self.df[[x_col, self.bp_col] + ([hue] if hue else [])].dropna()
+
+    #     if ax is None:
+    #         fig, ax = plt.subplots(figsize=(6, 4))
+
+    #     if hue is None:
+    #         ax.scatter(data[x_col], data[self.bp_col], alpha=0.6, edgecolor="black")
+    #     else:
+    #         groups = data[hue].unique()
+    #         for g in groups:
+    #             subset = data[data[hue] == g]
+    #             color = get_category_color(hue, g, default=None)
+    #             ax.scatter(
+    #                 subset[x_col],
+    #                 subset[self.bp_col],
+    #                 alpha=0.6,
+    #                 edgecolor="black",
+    #                 label=f"{hue}: {g}",
+    #                 color=color,
+    #             )
+    #         ax.legend()
+
+    #     # --- BERÄKNA KORRELATION ---
+    #     corr = data[[x_col, self.bp_col]].corr().iloc[0, 1]
+
+    #         # --- LÄGG TILL TEXT I GRAFEN ---
+    #     ax.text(
+    #         0.05,
+    #         0.95,
+    #         f"r = {corr:.2f}",
+    #         transform=ax.transAxes,
+    #         fontsize=12,
+    #         verticalalignment="top",
+    #         bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray")
+    #     )
+
+    #     ax.set_xlabel(x_col)
+    #     ax.set_ylabel(self.bp_col)
+    #     ax.set_title(title or f"{self.bp_col} vs {x_col}")
+    #     ax.grid(alpha=0.3)
+
+    #     return ax
     
 
     def plot_bp_scatter_grid(
@@ -368,3 +397,18 @@ class HealthAnalyzer:
 
         fig.tight_layout()
         return fig, axes 
+    
+
+    def plot_bp_correlation_heatmap(self, cols=None):
+        """
+        Plotta korrelations-heatmap där systoliskt BT ligger först.
+        Om cols är None används NUM_COLS från visualization.
+        """
+        if cols is None:
+            cols = ["systolic_bp"] + [c for c in NUM_COLS if c != "systolic_bp"]
+
+        plot_correlation_heatmap(
+            df=self.df,
+            cols=cols,
+            title="Correlation matrix (systolic blood pressure first)"
+        )

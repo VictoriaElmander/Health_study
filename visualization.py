@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from IPython.display import display
 import pandas as pd
-
+import seaborn as sns
 
 
 NUM_COLS = ["age", "height", "weight", "systolic_bp", "cholesterol"]
@@ -222,14 +222,12 @@ def plot_all_categorical_bars(df, cols=None):
     for ax, col in zip(axes, cols):
         unique_vals = df[col].dropna().unique()
 
-        # 🟦 Viktigt: vi skickar INTE in en egen colors-dict här,
-        # då används automatiskt CATEGORY_COLORS via plot_proportion_bar.
         plot_proportion_bar(
             df=df,
             col=col,
             ax=ax,
             title=pretty_titles.get(col, f"{col} (%)"),
-            colors=None,            # → använd get_category_color
+            colors=None,            # om inget skickas in används get_category_color
             order=unique_vals,
         )
 
@@ -238,4 +236,81 @@ def plot_all_categorical_bars(df, cols=None):
         fig.delaxes(axes[i])
 
     fig.tight_layout()
+    plt.show()
+
+
+def plot_scatter_with_corr(
+    ax,
+    x,
+    y,
+    x_label: str,
+    y_label: str,
+    hue: pd.Series | None = None,
+    title: str | None = None,
+):
+    """
+    Allmän scatterplot med ev. färgkodning (hue) och korrelationskoefficient i hörnet.
+    """
+    data = pd.DataFrame({"x": x, "y": y})
+    if hue is not None:
+        data["hue"] = hue
+
+    if hue is None:
+        ax.scatter(data["x"], data["y"], alpha=0.6, edgecolor="black")
+    else:
+        groups = data["hue"].unique()
+        for g in groups:
+            subset = data[data["hue"] == g]
+            color = get_category_color(hue.name if hasattr(hue, "name") else "hue", g, default=None)
+            ax.scatter(
+                subset["x"],
+                subset["y"],
+                alpha=0.6,
+                edgecolor="black",
+                label=f"{hue.name}: {g}",
+                color=color,
+            )
+        ax.legend()
+
+    # korrelation
+    corr = data[["x", "y"]].corr().iloc[0, 1]
+    ax.text(
+        0.05,
+        0.95,
+        f"r = {corr:.2f}",
+        transform=ax.transAxes,
+        fontsize=12,
+        verticalalignment="top",
+        bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray"),
+    )
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    if title:
+        ax.set_title(title)
+    ax.grid(alpha=0.3)
+
+
+def plot_correlation_heatmap(df, cols=None, title="Correlation Heatmap"):
+    """
+    Plots a correlation heatmap for the given columns.
+    If cols is None, use NUM_COLS from visualization.
+    """
+    if cols is None:
+        cols = NUM_COLS
+    
+    corr = df[cols].corr()
+
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(
+        corr,
+        annot=True,
+        cmap="coolwarm",
+        vmin=-1, vmax=1,
+        square=True,
+        linewidths=0.5,
+        cbar_kws={"shrink": 0.7}
+    )
+    plt.title(title)
+    plt.tight_layout()
     plt.show()
