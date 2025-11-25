@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from IPython.display import display
 import pandas as pd
 import seaborn as sns
-
+from sklearn.linear_model import LinearRegression
 
 NUM_COLS = ["age", "height", "weight", "systolic_bp", "cholesterol"]
 CAT_COLS = ["sex", "smoker", "disease"]
@@ -314,3 +314,51 @@ def plot_correlation_heatmap(df, cols=None, title="Correlation Heatmap"):
     plt.title(title)
     plt.tight_layout()
     plt.show()
+
+
+def plot_scatter_with_regression(
+    ax,
+    x: pd.Series,
+    y: pd.Series,
+    x_label: str,
+    y_label: str,
+    title: str | None = None,
+):
+    """
+    Scatterplot + enkel linjär regressionslinje + R² i hörnet.
+    """
+    # --- Skapa DataFrame ---
+    data = pd.DataFrame({"x": x, "y": y})
+
+    # --- Scatterplot ---
+    ax.scatter(data["x"], data["y"], alpha=0.6, edgecolor="black")
+
+    # --- Enkel linjär regression ---
+    model = LinearRegression().fit(data[["x"]], data["y"])
+    
+    x_vals = np.linspace(data["x"].min(), data["x"].max(), 200).reshape(-1, 1)
+
+    # --- Använd DataFrame så feature names matchar ---
+    x_vals_df = pd.DataFrame(x_vals, columns=["x"])
+    y_vals = model.predict(x_vals_df)
+
+    ax.plot(x_vals, y_vals, color="red", linewidth=2)
+
+    # --- R² ---
+    R2 = model.score(data[["x"]], data["y"])
+    ax.text(
+        0.05,
+        0.95,
+        f"R² = {R2:.2f}",
+        transform=ax.transAxes,
+        fontsize=12,
+        verticalalignment="top",
+        bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray"),
+    )
+
+    # --- Etiketter och titel ---
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    if title:
+        ax.set_title(title)
+    ax.grid(alpha=0.3)
