@@ -6,58 +6,79 @@ import matplotlib.pyplot as plt
 
 def simple_regressions(df, variables, target="systolic_bp"):
     rows = []
+    models = {} 
+    
     for var in variables:
         X = df[[var]]
         y = df[target]
         model = LinearRegression().fit(X, y)
+
         rows.append({
             "Variable": var,
             "Intercept": model.intercept_,
             "Coefficient": model.coef_[0],
             "R²": model.score(X, y),
         })
-    return pd.DataFrame(rows)
+        models[var] = model
 
+    return pd.DataFrame(rows), models
 
-def plot_scatter_with_regression(
-    ax,
-    x: pd.Series,
-    y: pd.Series,
-    x_label: str,
-    y_label: str,
-    title: str | None = None,
-):
-    """
-    Scatterplot + enkel linjär regressionslinje + R² i hörnet.
-    """
+def plot_scatter_with_regression(ax, x, y, model, x_label, y_label, title=None):
 
-    # Skapa DataFrame
-    data = pd.DataFrame({"x": x, "y": y})
+    ax.scatter(x, y, alpha=0.6, edgecolor="black")
 
-    # Scatter
-    ax.scatter(data["x"], data["y"], alpha=0.6, edgecolor="black")
-
-    # Enkel linjär regression
-    model = LinearRegression().fit(data[["x"]], data["y"])
-
-    # Grid för linjen
-    x_vals = np.linspace(data["x"].min(), data["x"].max(), 200).reshape(-1, 1)
-    x_vals_df = pd.DataFrame(x_vals, columns=["x"])   # viktigt för att slippa varning
+    x_vals = np.linspace(x.min(), x.max(), 200)
+    x_vals_df = pd.DataFrame({x_label: x_vals})
+    
     y_vals = model.predict(x_vals_df)
 
     ax.plot(x_vals, y_vals, color="red", linewidth=2)
 
-    # R² i hörnet
-    R2 = model.score(data[["x"]], data["y"])
-    ax.text(
-        0.05,
-        0.95,
-        f"R² = {R2:.2f}",
-        transform=ax.transAxes,
-        fontsize=12,
-        verticalalignment="top",
-        bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray"),
-    )
+    X_df = x.to_frame(name=x_label)
+    R2 = model.score(X_df, y)
+    
+    ax.text(0.05, 0.95, f"R² = {R2:.2f}", transform=ax.transAxes,
+            fontsize=12, verticalalignment="top",
+            bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray"))
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    if title:
+        ax.set_title(title)
+    ax.grid(alpha=0.3)
+
+# def plot_scatter_with_regression(ax, x, y, model, x_label, y_label, title=None):
+#     """
+#     Scatterplot + enkel linjär regressionslinje + R² i hörnet.
+#     """
+
+#     # Skapa DataFrame
+#     data = pd.DataFrame({"x": x, "y": y})
+
+#     # Scatter
+#     ax.scatter(data["x"], data["y"], alpha=0.6, edgecolor="black")
+
+#     # Enkel linjär regression
+#     model = LinearRegression().fit(data[["x"]], data["y"])
+
+#     # Grid för linjen
+#     x_vals = np.linspace(data["x"].min(), data["x"].max(), 200).reshape(-1, 1)
+#     x_vals_df = pd.DataFrame(x_vals, columns=["x"])   # viktigt för att slippa varning
+#     y_vals = model.predict(x_vals_df)
+
+#     ax.plot(x_vals, y_vals, color="red", linewidth=2)
+
+#     # R² i hörnet
+#     R2 = model.score(data[["x"]], data["y"])
+#     ax.text(
+#         0.05,
+#         0.95,
+#         f"R² = {R2:.2f}",
+#         transform=ax.transAxes,
+#         fontsize=12,
+#         verticalalignment="top",
+#         bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray"),
+#     )
 
     # Etiketter & titel
     ax.set_xlabel(x_label)
