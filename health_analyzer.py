@@ -197,7 +197,7 @@ class HealthAnalyzer:
         """
         summary = self.bp_summary_by_group(group_col, confidence=confidence)
         print(f"\nSystolic BP sammanfattning per {group_col}:")
-        display(summary)
+        print(summary)
 
         fig, ax = plt.subplots(figsize=(6, 3))
         self.plot_bp_box_by_group(group_col, ax=ax, order=order,
