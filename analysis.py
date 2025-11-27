@@ -3,6 +3,7 @@ from sklearn.linear_model import LinearRegression
 import statsmodels.api as sm
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import norm   
 
 def simple_regressions(df, variables, target="systolic_bp"):
     rows = []
@@ -23,69 +24,209 @@ def simple_regressions(df, variables, target="systolic_bp"):
 
     return pd.DataFrame(rows), models
 
-def plot_scatter_with_regression(ax, x, y, model, x_label, y_label, title=None):
 
-    ax.scatter(x, y, alpha=0.6, edgecolor="black")
+def plot_scatter_with_regression(df, var, target="systolic_bp", ax=None, model=None):
+    if ax is None:
+        fig, ax = plt.subplots()
 
-    x_vals = np.linspace(x.min(), x.max(), 200)
-    x_vals_df = pd.DataFrame({x_label: x_vals})
-    
+    X = df[[var]]
+    y = df[target]
+
+    # Om ingen modell skickas in → traina direkt (flexiblare)
+    if model is None:
+        model = LinearRegression().fit(X, y)
+
+    # Scatter
+    ax.scatter(df[var], df[target], alpha=0.6, edgecolor="black")
+
+    # Prediktion
+    x_vals = np.linspace(df[var].min(), df[var].max(), 200)
+    x_vals_df = pd.DataFrame({var: x_vals})
     y_vals = model.predict(x_vals_df)
 
     ax.plot(x_vals, y_vals, color="red", linewidth=2)
 
-    X_df = x.to_frame(name=x_label)
-    R2 = model.score(X_df, y)
+    R2 = model.score(X, y)
+    ax.text(0.05, 0.95, f"R² = {R2:.2f}",
+            transform=ax.transAxes, fontsize=12,
+            bbox=dict(facecolor="white", alpha=0.6))
+
+    ax.set_xlabel(var)
+    ax.set_ylabel(target)
+    ax.set_title(f"{target} vs {var} — regression")
+    ax.grid(alpha=0.3)
+
+
+def regression_panel(df, var, target="systolic_bp", model=None):
+    """
+    Skapar en 2x2-panel för vald variabel:
+    1) Scatter + regression
+    2) Residualplot
+    3) Histogram + normalfördelning
+    4) Q-Q-plot
+    """
+
+    # --- Modell ---
+    X = df[[var]]
+    y = df[target]
+
+    if model is None:
+        model = LinearRegression().fit(X, y)
+
+    y_pred = model.predict(X)
+    residuals = y - y_pred
+
+    fig, axes = plt.subplots(2,2,figsize=(12,9))
+
+    # ================= 1 SCATTER + REGRESSION =================
+    ax = axes[0,0]
+    x_grid = np.linspace(df[var].min(), df[var].max(), 200)
+    pred_df = pd.DataFrame({var: x_grid})
+    pred_y = model.predict(pred_df)
+
+    ax.scatter(df[var], y, alpha=0.6, edgecolor="k")
+    ax.plot(x_grid, pred_y, color="red", linewidth=2)
     
-    ax.text(0.05, 0.95, f"R² = {R2:.2f}", transform=ax.transAxes,
-            fontsize=12, verticalalignment="top",
-            bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray"))
-
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    if title:
-        ax.set_title(title)
+    R2 = model.score(X, y)
+    ax.text(0.02, 0.98, f"R² = {R2:.2f}",
+            transform=ax.transAxes, fontsize=12,
+            va="top", ha="left",
+            bbox=dict(facecolor="white", alpha=0.6))
+    
+    ax.set_title("Regression: Scatter + linje")
+    ax.set_xlabel(var)
+    ax.set_ylabel(target)
     ax.grid(alpha=0.3)
 
-# def plot_scatter_with_regression(ax, x, y, model, x_label, y_label, title=None):
-#     """
-#     Scatterplot + enkel linjär regressionslinje + R² i hörnet.
-#     """
-
-#     # Skapa DataFrame
-#     data = pd.DataFrame({"x": x, "y": y})
-
-#     # Scatter
-#     ax.scatter(data["x"], data["y"], alpha=0.6, edgecolor="black")
-
-#     # Enkel linjär regression
-#     model = LinearRegression().fit(data[["x"]], data["y"])
-
-#     # Grid för linjen
-#     x_vals = np.linspace(data["x"].min(), data["x"].max(), 200).reshape(-1, 1)
-#     x_vals_df = pd.DataFrame(x_vals, columns=["x"])   # viktigt för att slippa varning
-#     y_vals = model.predict(x_vals_df)
-
-#     ax.plot(x_vals, y_vals, color="red", linewidth=2)
-
-#     # R² i hörnet
-#     R2 = model.score(data[["x"]], data["y"])
-#     ax.text(
-#         0.05,
-#         0.95,
-#         f"R² = {R2:.2f}",
-#         transform=ax.transAxes,
-#         fontsize=12,
-#         verticalalignment="top",
-#         bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray"),
-#     )
-
-    # Etiketter & titel
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    if title:
-        ax.set_title(title)
+    # ================= 2 RESIDUALPLOT =================
+    ax = axes[0,1]
+    ax.scatter(y_pred, residuals, edgecolor="k", alpha=0.6)
+    ax.axhline(0, color="red", linewidth=2)
+    ax.set_title("Residualer vs Prediktion")
+    ax.set_xlabel("Prediktion")
+    ax.set_ylabel("Residual")
     ax.grid(alpha=0.3)
+
+    # ================= 3 HISTOGRAM + NORMALKURVA =================
+    ax = axes[1,0]
+    ax.hist(residuals, bins=25, density=True, alpha=0.6, edgecolor="k")
+    μ, σ = residuals.mean(), residuals.std()
+    xs = np.linspace(residuals.min(), residuals.max(), 200)
+    ax.plot(xs, norm.pdf(xs, μ, σ), color="darkorange", linewidth=2)
+    ax.set_title("Histogram + Normalfördelning")
+    ax.set_xlabel("Residual")
+    ax.set_ylabel("Täthet")
+    ax.grid(alpha=0.3)
+
+    # ================= 4 Q-Q-PLOT =================
+    ax = axes[1,1]
+    sm.qqplot(residuals, line="45", ax=ax)
+    ax.set_title("Q–Q plot residualer")
+    ax.grid(alpha=0.3)
+
+    # ================= HUVUDTITEL =================
+    fig.suptitle(f"Regressionsdiagnostik — {target} ~ {var}", fontsize=18, weight="bold")
+    plt.tight_layout(rect=[0,0,1,0.95])  # ger plats för huvudrubrik
+    plt.show()
+
+
+def regression_diagnostics(df, var, target="systolic_bp", model=None):
+    """
+    Plottar 3 figurer i en rad för en variabel:
+    1) Scatter + regression
+    2) Residualplot
+    3) Q-Q plot
+    """
+
+    # --- Hämta y & X ---
+    X = df[[var]]
+    y = df[target]
+
+    # --- Återanvänd eller beräkna modell ---
+    if model is None:
+        model = LinearRegression().fit(X, y)
+
+    y_pred = model.predict(X)
+    residuals = y - y_pred
+
+    # --- Subplots (1 rad, 3 kol) ---
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+
+    # ==================================================
+    # 1. Scatter + regressionslinje
+    # ==================================================
+    regression_x = np.linspace(df[var].min(), df[var].max(), 200)
+    reg_df = pd.DataFrame({var: regression_x})
+    reg_y = model.predict(reg_df)
+
+    axes[0].scatter(df[var], y, edgecolor="black", alpha=0.6)
+    axes[0].plot(regression_x, reg_y, color="red", linewidth=2)
+    axes[0].set_title(f"{target} ~ {var}")
+
+    # ==================================================
+    # 2. Residualplot
+    # ==================================================
+    axes[1].scatter(y_pred, residuals, alpha=0.6, edgecolor="black")
+    axes[1].axhline(0, color="red", linewidth=2)
+    axes[1].set_title("Residualer vs Prediktion")
+    axes[1].set_xlabel("Prediktion")
+    axes[1].set_ylabel("Residual")
+
+    # ==================================================
+    # 3. Q-Q plot
+    # ==================================================
+    sm.qqplot(residuals, line="45", ax=axes[2])
+    axes[2].set_title("Q–Q plot residualer")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def qq_diagnostics(df, var, target="systolic_bp"):
+    """
+    Visar residualernas fördelning för enkel linjär regression:
+      - Histogram + normalfördelningskurva
+      - Förbättrad Q–Q-plot
+    """
+
+    # 1. Anpassa enkel linjär regression
+    X = df[[var]]
+    y = df[target]
+    model = LinearRegression().fit(X, y)
+    y_pred = model.predict(X)
+    residuals = y - y_pred
+
+    # 2. Figur: 1 rad, 2 kolumner
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    # ------------------------------------
+    # Vänster: histogram + normal-kurva
+    # ------------------------------------
+    ax = axes[0]
+    ax.hist(residuals, bins=30, density=True, alpha=0.6, edgecolor="black")
+
+    # Teoretisk normalfördelning med samma medelvärde & std som residualerna
+    mu, sigma = residuals.mean(), residuals.std()
+    xs = np.linspace(residuals.min(), residuals.max(), 200)
+    ax.plot(xs, norm.pdf(xs, mu, sigma), linewidth=2)
+
+    ax.set_title(f"Residualfördelning — {target} ~ {var}")
+    ax.set_xlabel("Residual")
+    ax.set_ylabel("Täthet")
+    ax.grid(alpha=0.3)
+
+    # ------------------------------------
+    # Höger: förbättrad Q–Q-plot
+    # ------------------------------------
+    ax = axes[1]
+    sm.qqplot(residuals, line="45", ax=ax)
+    ax.set_title("Q–Q-plot residualer")
+    ax.grid(alpha=0.3)
+    ax.set_aspect("equal", "box")  # gör linjen 45° visuellt korrekt
+
+    plt.tight_layout()
+    plt.show()
+
 
 
 def multiple_regression_two(df, vars2, target="systolic_bp"):
