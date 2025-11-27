@@ -1,5 +1,4 @@
 import pandas as pd
-import re
 
 # -------------------------------------------------------
 # 0. Ladda data + krav på kolumner
@@ -8,9 +7,7 @@ import re
 REQUIRED = ["id", "age", "sex", "height", "weight", "systolic_bp", "cholesterol", "smoker", "disease"]
 
 def load_data(file_path: str) -> pd.DataFrame:  
-    """
-    Reads data from a CSV file and creates a DataFrame.
-    """
+    """Load CSV data and ensure all required columns exist."""
     
     df = pd.read_csv(file_path, encoding="utf-8") 
     missing = [col for col in REQUIRED if col not in df.columns]
@@ -24,13 +21,18 @@ def load_data(file_path: str) -> pd.DataFrame:
 # -------------------------------------------------------
 
 class DataCleaner:
+    """Utility class for cleaning and preparing health dataset."""
+
     def __init__(self, df):
+        """Store a copy of input DataFrame to avoid modifying original."""
         self.df = df.copy()  # behåll originaldata orörd
         self.pattern = r"^\s+|\s+$" #r"^\s|\s$"
 
 
     # 1. Rensa whitespace + konvertera till kategori
     def clean_and_categorize(self, columns):
+        """Strip whitespace & convert given columns to category type."""
+        
         # förväntade kategoriska värden
         expected = {
         "sex": {"M", "F"},
@@ -59,6 +61,8 @@ class DataCleaner:
 
     # 2. Konvertera disease till bool
     def convert_disease_to_bool(self, col="disease"):
+        """Convert binary disease column to boolean if values are 0/1."""
+
         unique_vals = set(self.df[col].dropna().unique())
 
         try:
@@ -80,6 +84,7 @@ class DataCleaner:
 
     # 3. Ta bort dubbletter baserat på id
     def remove_duplicate_ids(self, id_col="id"):
+        """Remove duplicate rows based on ID while keeping the first."""
         unique_ids = self.df[id_col].nunique()
         total_rows = len(self.df)
 
@@ -95,6 +100,7 @@ class DataCleaner:
 
     # 4. Utskrift av kolumninformation
     def show_info(self):
+        """Print column types and unique/min-max summary."""
         print("\ncolumn".ljust(12), "dtype".ljust(12), "unique values")
         print("-" * 80)
 
@@ -119,6 +125,7 @@ class DataCleaner:
 
     # 5. Kör hela rensningspipen
     def process(self):
+        """Run full cleaning pipeline and return cleaned DataFrame."""
         self.clean_and_categorize(["sex", "smoker"]) \
             .convert_disease_to_bool("disease") \
             .remove_duplicate_ids("id")

@@ -29,9 +29,9 @@ CATEGORY_COLORS = {
 
 def get_category_color(var_name, level, default="#777777"):
     """
-    Hämtar en konsekvent färg för en kategorinivå.
-    Exempel: get_category_color("smoker", "Yes").
+    Return a consistent color for a category level using CATEGORY_COLORS.
     """
+    
     mapping = CATEGORY_COLORS.get(var_name, {})
     return mapping.get(level, default)
 
@@ -47,7 +47,7 @@ def summary_table(df: pd.DataFrame) -> pd.DataFrame:
 
 def plot_hist(data, col, ax, bins=30, color="skyblue"):
     """
-    Draw a histogram for a column.
+    Draw a histogram for a numeric column on the given axis.
     """
     ax.hist(data, bins=bins, color=color, edgecolor="black", alpha=0.7)
     ax.set_title(f"Distribution of {col}", fontsize=12)
@@ -58,7 +58,7 @@ def plot_hist(data, col, ax, bins=30, color="skyblue"):
 
 def plot_box(data, col, ax, color="lightblue", position=1):
     """
-    Draw a horizontal boxplot for a column.
+    Draw a horizontal boxplot for a numeric column on the given axis.
     """
     kwargs = dict(
         vert=False, patch_artist=True,
@@ -249,7 +249,7 @@ def plot_scatter_with_corr(
     title: str | None = None,
 ):
     """
-    Allmän scatterplot med ev. färgkodning (hue) och korrelationskoefficient i hörnet.
+    Create a scatterplot with optional hue and show Pearson correlation r.
     """
     data = pd.DataFrame({"x": x, "y": y})
     if hue is not None:
@@ -325,7 +325,7 @@ def plot_scatter_with_regression(
     title: str | None = None,
 ):
     """
-    Scatterplot + enkel linjär regressionslinje + R² i hörnet.
+    Create a scatterplot with simple linear regression line and show R².
     """
     # --- Skapa DataFrame ---
     data = pd.DataFrame({"x": x, "y": y})

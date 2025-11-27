@@ -288,6 +288,77 @@ def plot_partial_effects(df, vars2, target="systolic_bp"):
     plt.show()
 
 
+def multiple_regression_panel_full(df, vars2=['age','cholesterol'], target="systolic_bp"):
+
+    X = df[vars2]
+    y = df[target]
+    model = LinearRegression().fit(X, y)
+
+    y_pred = model.predict(X)
+    residuals = y - y_pred
+
+    v1, v2 = vars2
+    b0, b1, b2 = model.intercept_, model.coef_[0], model.coef_[1]
+
+    # ----- R² och Adjusted R² -----
+    R2 = model.score(X, y)
+    n = len(df)
+    p = len(vars2)
+    adj_R2 = 1 - (1 - R2) * (n - 1) / (n - p - 1)
+
+    fig, axes = plt.subplots(3,2,figsize=(14,12))
+
+    # PARTIAL 1
+    ax = axes[0,0]
+    grid = np.linspace(df[v1].min(), df[v1].max(), 200)
+    ax.scatter(df[v1], y, alpha=0.5)
+    ax.plot(grid, b0 + b1*grid + b2*df[v2].mean(), color='red')
+    ax.set_title(f"Partiell effekt: {v1} ( {v2}=medel )")
+
+    # PARTIAL 2
+    ax = axes[0,1]
+    grid = np.linspace(df[v2].min(), df[v2].max(), 200)
+    ax.scatter(df[v2], y, alpha=0.5)
+    ax.plot(grid, b0 + b1*df[v1].mean() + b2*grid, color='blue')
+    ax.set_title(f"Partiell effekt: {v2} ( {v1}=medel )")
+
+    # RESIDUAL vs PREDICTION
+    ax = axes[1,0]
+    ax.scatter(y_pred, residuals, alpha=0.6)
+    ax.axhline(0,color="red")
+    ax.set_title("Residual vs Prediktion")
+
+    # HISTOGRAM
+    ax = axes[1,1]
+    ax.hist(residuals,bins=25,density=True,alpha=0.6)
+    xs = np.linspace(residuals.min(),residuals.max(),200)
+    ax.plot(xs, norm.pdf(xs,residuals.mean(),residuals.std()),color="darkorange")
+    ax.set_title("Residualdistribution")
+
+    # Q-Q PLOT
+    ax = axes[2,0]
+    sm.qqplot(residuals, line="45", ax=ax)
+    ax.set_title("Q–Q residualer")
+
+    # KOEF + R²-ruta
+    ax = axes[2,1]
+    ax.axis('off')
+    text = (
+        f"R²        = {R2:.3f}\n"
+        f"Adj R²    = {adj_R2:.3f}\n\n"
+        f"Intercept = {b0:.2f}\n"
+        f"{v1} koef  = {b1:.2f}\n"
+        f"{v2} koef  = {b2:.2f}\n"
+    )
+    ax.text(0.05,0.8,text,fontsize=14,va="top",family="monospace")
+
+    fig.suptitle(
+        f"Multipel regressionsdiagnostik — {target} ~ {v1} + {v2}",
+        fontsize=18,fontweight="bold"
+    )
+    plt.tight_layout(rect=[0,0,1,0.95])
+    plt.show()
+
 
 def ols_full(df, variables, target="systolic_bp"):
     X = sm.add_constant(df[variables])

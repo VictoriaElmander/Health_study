@@ -7,8 +7,10 @@ from hypothesis_plots import plot_mean_diff_overview
 
 class MeanDiffAnalyzer:
     """
-    Klass för att analysera skillnad i medelvärde mellan två grupper
-    med både bootstrap och Welch's t-test, samt visualisering.
+    Analyze the difference in means between two groups using both 
+    bootstrap inference and Welch's t-test, with optional visualization.
+
+    Intended for comparing blood pressure or other continuous measurements.
     """
 
     def __init__(
@@ -41,6 +43,22 @@ class MeanDiffAnalyzer:
     # 1. Kör bootstrap-testet
     # -----------------------------
     def run_bootstrap(self):
+        """
+        Run bootstrap estimation of mean difference.
+
+        Returns
+        -------
+        dict with keys:
+            diff : float
+                Observed difference in means.
+            p_value : float
+                Hypothesis test p-value from bootstrap resampling.
+            ci : (low, high)
+                Bootstrap confidence interval for mean difference.
+            boot_diffs : np.ndarray
+                Distribution of bootstrap mean differences.
+        """
+        
         if self.bootstrap_result is not None:
             return self.bootstrap_result
         
@@ -64,6 +82,25 @@ class MeanDiffAnalyzer:
     # 2. Kör Welch t-test
     # -----------------------------
     def run_welch(self):
+        """
+        Run Welch's unequal variance t-test on the two groups.
+
+        Returns
+        -------
+        dict with keys:
+            diff : float
+                Sample mean difference.
+            p_value : float
+                Welch test p-value.
+            ci : (low, high)
+                Confidence interval for mean difference.
+            t_stat : float
+                Calculated t-statistic value.
+            dof : float
+                Degrees of freedom.
+            se : float
+                Standard error estimate.
+        """
         if self.welch_result is not None:
             return self.welch_result
     
@@ -89,10 +126,9 @@ class MeanDiffAnalyzer:
     # -----------------------------
     def xlabel(self):
         """
-        Returnerar en beskrivande etikett för skillnaden
-        mellan grupp 1 och grupp 2, t.ex.
-        'Skillnad i Rökare - Icke-rökare (mmHg)'.
+        Return descriptive X-axis label for plots based on group names.
         """
+        
         return f"Skillnad i {self.name1} - {self.name2} (mmHg)"
 
 
@@ -101,8 +137,13 @@ class MeanDiffAnalyzer:
     # -----------------------------
     def summary_table(self) -> pd.DataFrame:
         """
-        Kör båda testerna (om de inte redan är körda)
-        och returnerar en DataFrame med resultaten.
+        Run both methods and return a formatted comparison table.
+
+        Returns
+        -------
+        pd.DataFrame
+            Columns include:
+            ['Method', 'Observed diff', 'p-value', 'CI lower', 'CI upper']
         """
         if self.bootstrap_result is None:
             self.run_bootstrap()
@@ -141,7 +182,14 @@ class MeanDiffAnalyzer:
     # -----------------------------
     def plot_overview(self):
         """
-        Ritar den 3-delade figuren (t-fördelning, normalapprox, bootstrap).
+        Plot a three-panel visualization comparing:
+        * Bootstrap distribution + CI
+        * Welch confidence interval
+        * Normal approximation overlay
+
+        Returns
+        -------
+        matplotlib.Figure
         """
         if self.bootstrap_result is None:
             self.run_bootstrap()

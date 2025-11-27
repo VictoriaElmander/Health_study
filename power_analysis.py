@@ -61,9 +61,8 @@ def required_effect_for_power(group1, group2,
                               total_n=None, power=0.8,
                               alpha=0.05, one_sided=True):
     """
-    Beräknar minsta effektstorlek (Δ_min i mmHg) som krävs för att nå 'power'
-    med ett totalt sample N (eller nuvarande N om total_n=None).
-    Tar hänsyn till proportionen mellan grupperna.
+    Minimum detectable effect Δ for target power.
+    Assumes normal approx and preserved group ratio.
     """
     x1 = np.asarray(group1, float); x1 = x1[~np.isnan(x1)]
     x2 = np.asarray(group2, float); x2 = x2[~np.isnan(x2)]
@@ -95,8 +94,8 @@ def required_n_for_power(group1, group2,
                          delta, power=0.8,
                          alpha=0.05, one_sided=True):
     """
-    Beräknar total N (och fördelningen per grupp) som krävs för att nå 'power'
-    givet en sann effekt 'delta' (t.ex. obs_diff).
+    Required total N to detect effect Δ at target power.
+    Group proportions preserved.
     """
     x1 = np.asarray(group1, float); x1 = x1[~np.isnan(x1)]
     x2 = np.asarray(group2, float); x2 = x2[~np.isnan(x2)]
@@ -137,11 +136,8 @@ def power_curve_by_effect(
     random_state=42,
 ):
     """
-    Beräknar power som funktion av effektstorlek (Δ) för givna groups.
-
-    Returnerar:
-        effects (array),
-        power_values (array)
+    Power values for a range of effect sizes.
+    Returns (effects, power).
     """
     effects = np.asarray(effects, float)
     power_vals = [
@@ -170,8 +166,8 @@ def power_curve_by_n(
     random_state=42,
 ):
     """
-    Beräknar power som funktion av total stickprovsstorlek N,
-    med samma gruppfördelning som i datan.
+    Power as function of total N, keeping group ratio.
+    Returns (total_ns, power, n1, n2).
     """
     x1 = np.asarray(group1, float); x1 = x1[~np.isnan(x1)]
     x2 = np.asarray(group2, float); x2 = x2[~np.isnan(x2)]
@@ -209,8 +205,7 @@ def power_curve_by_n(
 
 def summarize_power_effects(effects, power_values, target_power=0.80):
     """
-    Tar en array av effektstorlekar och motsvarande power-värden
-    och returnerar text + värdet för delta vid 80 % power.
+    Return minimum Δ reaching target power (or None).
     """
     max_power = power_values.max()
 
@@ -231,8 +226,7 @@ def summarize_power_effects(effects, power_values, target_power=0.80):
 
 def summarize_power_sample_size(total_ns, power_values, target_power=0.80):
     """
-    Sammanfattar vilken total stickprovsstorlek (N) som krävs 
-    för att uppnå target_power.
+    Return minimum total N reaching target power (or None).
     """
     max_power = power_values.max()
 

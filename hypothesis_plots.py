@@ -3,7 +3,14 @@ import matplotlib.pyplot as plt
 from scipy.stats import t as t_dist
 
 
-def plot_bootstrap_dist(boot_diffs, obs_diff, ci,  p_boot=None, xlabel="Skillnad (grupp1 − grupp2)"):
+def plot_bootstrap_dist(boot_diffs, obs_diff, ci, xlabel="Skillnad (grupp1 − grupp2)"): #p_boot=None
+    """
+    Plot the bootstrap distribution of the mean difference.
+
+    Displays the simulated bootstrap distribution, the observed mean
+    difference, and its confidence interval, providing visual intuition
+    about uncertainty and sampling variability.
+    """    
     ci_low, ci_high = ci
     
     fig, ax = plt.subplots(figsize=(7,4))
@@ -30,8 +37,11 @@ def plot_bootstrap_dist(boot_diffs, obs_diff, ci,  p_boot=None, xlabel="Skillnad
 
 def plot_t_distribution(t_stat, dof, confidence=0.95, two_sided=False):
     """
-    Plottar t-fördelningen med markerat kritiskt område och observerat t-värde.
-    two_sided=False = ensidigt test (H1: diff > 0).
+    Visualize a t-distribution showing critical region and observed t-value.
+
+    Highlights rejection region(s) based on confidence and test direction,
+    and marks where the observed test statistic lies relative to t_crit.
+    Useful for interpreting Welch’s t-test results visually.
     """
 
     alpha = 1 - confidence
@@ -128,31 +138,15 @@ def plot_mean_diff_overview(
     confidence=0.95,
     xlabel="Skillnad i systoliskt blodtryck (mmHg)"):
     """
-    Ritar en 3-delad figur:
-      1) t-fördelning med kritiskt område och observerat t-värde
-      2) Normalapproximerad fördelning för skillnaden i medelvärde (Welch)
-      3) Bootstrapfördelning för skillnaden i medelvärde
+    Create a 3-panel overview of mean difference inference methods.
 
-    Parameters
-    ----------
-    boot_diffs : array-like
-        Bootstrapfördelning av skillnad i medelvärde.
-    obs_diff_boot : float
-        Observerad skillnad i medelvärde (från bootstrap-anropet, samma som diff_t normalt).
-    ci_boot : (lo, hi)
-        KI från bootstrap-metoden.
-    diff_t : float
-        Observerad skillnad i medelvärde från Welch t-test.
-    ci_welch : (lo, hi)
-        KI från Welch t-test.
-    t_stat : float
-        t-observerat från Welch t-test.
-    dof : float
-        Frihetsgrader från Welch t-test.
-    se : float
-        Standard error för skillnaden (från Welch).
-    xlabel : str
-        Etikett för x-axlar (skillnad i medel).
+    Panels shown:
+      1) t-distribution → Welch t-test rejection region + t_obs
+      2) Normal approximation → PDF + CI shading (Welch)
+      3) Bootstrap distribution → histogram + CI + observed diff
+
+    Provides a full comparative visualization of frequentist inference
+    based on parametric, approximate, and non-parametric approaches.
     """
 
     ci_low_wt, ci_high_wt = ci_welch

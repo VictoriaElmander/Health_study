@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.stats import norm
 import pandas as pd
 from confidence_intervals import ci_norm, ci_mean_boot_perc, ci_mean_boot_bca
 

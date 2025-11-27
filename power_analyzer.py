@@ -15,13 +15,13 @@ from power_plots import plot_power_vs_effect, plot_power_vs_n
 
 class PowerAnalyzer:
     """
-    Klass för power-analys av skillnad i medelvärde mellan två grupper.
+    Perform statistical power analysis for the difference in means between two groups.
 
-    Använder:
-      - simulate_power_welch  (simulerad power)
-      - power_curve_by_effect (power som funktion av effektstorlek)
-      - power_curve_by_n      (power som funktion av stickprovsstorlek)
-      - required_effect_for_power / required_n_for_power (analytiska beräkningar)
+    Includes:
+    - Simulation-based power estimation (Welch's t-test)
+    - Power curve as a function of effect size
+    - Power curve as a function of total sample size
+    - Analytical solutions for required effect size or sample size
     """
 
     def __init__(
@@ -36,6 +36,25 @@ class PowerAnalyzer:
         trials_n=800,
         one_sided=True,
     ):
+        """
+        Initialize the analyzer with two numeric samples.
+
+        Parameters
+        ----------
+        group1, group2 : array-like
+            Numeric sample values. Converted to cleaned NumPy arrays.
+        name1, name2 : str
+            Labels for reporting and visualization.
+        alpha : float
+            Significance level for hypothesis tests (default 0.05).
+        target_power : float
+            Desired minimum power (default 0.80).
+        trials_effect, trials_n : int
+            Number of simulation runs when estimating power curves.
+        one_sided : bool
+            If True, power is computed for a one-sided hypothesis test.
+        """
+
         # spara data som rena numpy-arrayer utan NaN
         x1 = np.asarray(group1, float)
         x2 = np.asarray(group2, float)
@@ -62,7 +81,15 @@ class PowerAnalyzer:
 
     # ---------- 1. Power vid observerad effekt ----------
     def real_power(self):
-        """Beräknar (och cachar) power för observerad effekt Δ_obs."""
+        """
+        Compute (with caching) the power for the observed effect size Δ_obs.
+
+        Returns
+        -------
+        float
+            Estimated power at the actual sample effect.
+        """
+        
         if self._real_power is None:
             self._real_power = simulate_power_welch(
                 self.group1,
@@ -79,8 +106,17 @@ class PowerAnalyzer:
     # ---------- 2. Power som funktion av effektstorlek ----------
     def power_by_effect(self, effects=None):
         """
-        Simulerar power för en rad effektstorlekar Δ.
-        Returnerar (effects, power_values).
+        Simulate statistical power across a range of effect sizes.
+
+        Parameters
+        ----------
+        effects : array-like or None
+            Values of Δ to test. If None, defaults to [0.0 → 3.0 step 0.5].
+
+        Returns
+        -------
+        (effects, power_values) : tuple of arrays
+            Δ values and corresponding power estimates.
         """
         if effects is None:
             effects = np.arange(0.0, 3.1, 0.5)
@@ -99,7 +135,14 @@ class PowerAnalyzer:
         return self._power_effect
 
     def plot_power_by_effect(self, effects=None):
-        """Ritar power–kurvan som funktion av Δ."""
+        """
+        Plot the power curve as a function of effect size.
+
+        Returns
+        -------
+        str
+            A human-readable summary of effect size requirements.
+        """
         effects, power_vals = self.power_by_effect(effects)
         plot_power_vs_effect(
             effects,
@@ -120,8 +163,16 @@ class PowerAnalyzer:
     # ---------- 3. Power som funktion av stickprovsstorlek ----------
     def power_by_n(self, total_ns=None):
         """
-        Simulerar power för olika totala stickprovsstorlekar.
-        Returnerar (total_ns, power_values, n1_list, n2_list).
+        Estimate power for a range of total sample sizes.
+
+        Parameters
+        ----------
+        total_ns : array-like or None
+            Total N values to evaluate. If None: [200 → 1600 step 200].
+
+        Returns
+        -------
+        (total_ns, power_values, n1_list, n2_list)
         """
         if total_ns is None:
             total_ns = np.arange(200, 1601, 200)
@@ -141,7 +192,14 @@ class PowerAnalyzer:
         return self._power_n
 
     def plot_power_by_n(self, total_ns=None):
-        """Ritar power–kurvan som funktion av total N."""
+        """
+        Plot a power curve for increasing total sample size N.
+
+        Returns
+        -------
+        str
+            Summary describing when sample size is sufficient.
+        """
         total_ns, power_vals, _, _ = self.power_by_n(total_ns)
 
         plot_power_vs_n(
@@ -162,10 +220,14 @@ class PowerAnalyzer:
     # ---------- 4. Analytiska beräkningar ----------
     def analytic_requirements(self):
         """
-        Gör de analytiska beräkningarna:
-        - vilken effekt som krävs med nuvarande N
-        - vilket N som krävs för observerad effekt
-        Returnerar en liten dict eller DataFrame.
+        Compute analytical requirements for reaching target power.
+
+        Returns
+        -------
+        pd.DataFrame
+            Two rows:
+            1. Required effect size for current sample size
+            2. Required sample size for observed effect
         """
         delta_min = required_effect_for_power(
             self.group1,

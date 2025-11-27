@@ -27,11 +27,13 @@ class HealthAnalyzer:
     # -------------------------------------------------------
     def bp_summary_by_group(self, group_col: str, confidence: float = 0.95) -> pd.DataFrame:
         """
-        Calculate group-wise summary statistics and approx. confidence interval
+        Compute grouped summary statistics and an approximate confidence interval
         for mean systolic blood pressure.
 
-        Returns a DataFrame with:
-        n, mean, std, median, min, max, ci_lower, ci_upper.
+        Returns
+        -------
+        pd.DataFrame
+            Contains: n, mean, median, std, min, max, ci_lower, ci_upper.
         """
         data = self.df[[group_col, self.bp_col]].dropna()
 
@@ -70,12 +72,10 @@ class HealthAnalyzer:
         confidence: float = 0.95,
     ) -> pd.DataFrame:
         """
-        Skapa EN sammanfattningstabell för systoliskt blodtryck
-        för alla angivna kategoriska variabler.
+        Produce a single summary table for SBP for several categorical variables.
 
-        Raderna får ett MultiIndex:
-        - nivå 1: variabelnamn (sex, smoker, disease)
-        - nivå 2: nivå i variabeln (t.ex. F, M, Yes, No, True, False)
+        The returned table uses a MultiIndex:
+        (Variable, Category level).
         """
         if group_cols is None:
             # t.ex. hämta från visualization om du vill återanvända
@@ -106,8 +106,14 @@ class HealthAnalyzer:
         title: str | None = None,
     ):
         """
-        Draw a horizontal boxplot of systolic BP split by a grouping variable
-        (e.g. sex, smoker, disease).
+        Draw a horizontal boxplot of systolic BP split by a categorical variable.
+
+        Parameters
+        ----------
+        group_col : str
+            Column to group data by.
+        order : list, optional
+            Custom ordering of category levels.
         """
         data = self.df[[group_col, self.bp_col]].dropna()
 
@@ -153,8 +159,8 @@ class HealthAnalyzer:
     # -------------------------------------------------------
     def plot_bp_multi_boxgrid(self, group_cols=None):
         """
-        Create a grid of boxplots for systolic BP by several categorical variables,
-        e.g. ['sex', 'smoker', 'disease'].
+        Create a subplot grid of boxplots for multiple categorical variables.
+        Useful for comparing patterns across variables.
         """
         if group_cols is None:
             # auto-välj kategoriska kolumner
@@ -182,8 +188,12 @@ class HealthAnalyzer:
 
     def analyze_bp_by_group(self, group_col: str, order=None, confidence: float = 0.95):
         """
-        Skriv ut sammanfattande statistik + rita boxplot för systoliskt BT
-        grupperat på en kategorisk variabel (t.ex. 'sex', 'smoker', 'disease').
+        SPrint group-level SBP summary + draw a boxplot in one command.
+
+        Returns
+        -------
+        pd.DataFrame
+            Summary table for the chosen group.
         """
         summary = self.bp_summary_by_group(group_col, confidence=confidence)
         print(f"\nSystolic BP sammanfattning per {group_col}:")
@@ -199,7 +209,7 @@ class HealthAnalyzer:
 
     def plot_bp_hist(self, bins=30):
         """
-        Plottar histogram för systoliskt blodtryck.
+        Plot a single histogram of systolic blood pressure.
         """
         values = self.df[self.bp_col].dropna()  # 1D-array med bara systoliskt BT
         
@@ -210,7 +220,7 @@ class HealthAnalyzer:
 
     def plot_bp_hist_by_group(self, group_col, bins=30):
         """
-        Ritar histogram för systoliskt blodtryck uppdelat på grupper.
+        Plot one histogram per category level in separate subplots.
         """
         groups = self.df[group_col].dropna().unique()
 
@@ -228,10 +238,8 @@ class HealthAnalyzer:
     
     def plot_bp_hist_overlaid(self, group_col, bins=30, ax=None, show=True):
         """
-        Överlagrat histogram för systoliskt BT, uppdelat på group_col
-        (t.ex. 'smoker' eller 'sex').
-
-        Om ax är None skapas en ny figur, annars ritas i det givna ax-objektet.
+        Overlay histograms of SBP for each category in the same plot.
+        Useful for direct comparison between groups.
         """
         data = self.df[[group_col, self.bp_col]].dropna()
         groups = data[group_col].unique()
@@ -275,9 +283,9 @@ class HealthAnalyzer:
 
     def plot_bp_hist_box_grid(self, group_cols=None, bins=30):
         """
-        Ritar en grid motsvarande rader för antal groupcols och 2 kolumner:
-        - vänster: överlagrat histogram för systoliskt BT per grupp
-        - höger : boxplot för systoliskt BT per grupp
+        Create a two-column layout for each group:
+        Left  = overlaid histogram
+        Right = boxplot of SBP
         """
         if group_cols is None:
             group_cols = ["sex", "smoker", "disease"]
@@ -300,13 +308,11 @@ class HealthAnalyzer:
         return fig, axes
     
 
-    def plot_bp_scatter(
-        self,
-        x_col: str,
-        ax: plt.Axes | None = None,
-        hue: str | None = None,
-        title: str | None = None,
-    ):
+    def plot_bp_scatter(self, x_col: str, ax: plt.Axes | None = None, hue: str | None = None, title: str | None = None):
+        """
+        Scatterplot of SBP vs another numeric variable, with optional hue coloring.
+        Displays correlation coefficient on the plot.
+        """
         data = self.df[[x_col, self.bp_col] + ([hue] if hue else [])].dropna()
 
         if ax is None:
@@ -327,77 +333,14 @@ class HealthAnalyzer:
         return ax
 
 
-
-
-    # def plot_bp_scatter(
-    #     self,
-    #     x_col: str,
-    #     ax: plt.Axes | None = None,
-    #     hue: str | None = None,
-    #     title: str | None = None,
-    #     ):
-    #     """
-    #     Scatterplot: systoliskt blodtryck mot en annan variabel (x_col).
-    #     Optionellt färga efter en kategorisk variabel (hue).
-    #     """
-    #     data = self.df[[x_col, self.bp_col] + ([hue] if hue else [])].dropna()
-
-    #     if ax is None:
-    #         fig, ax = plt.subplots(figsize=(6, 4))
-
-    #     if hue is None:
-    #         ax.scatter(data[x_col], data[self.bp_col], alpha=0.6, edgecolor="black")
-    #     else:
-    #         groups = data[hue].unique()
-    #         for g in groups:
-    #             subset = data[data[hue] == g]
-    #             color = get_category_color(hue, g, default=None)
-    #             ax.scatter(
-    #                 subset[x_col],
-    #                 subset[self.bp_col],
-    #                 alpha=0.6,
-    #                 edgecolor="black",
-    #                 label=f"{hue}: {g}",
-    #                 color=color,
-    #             )
-    #         ax.legend()
-
-    #     # --- BERÄKNA KORRELATION ---
-    #     corr = data[[x_col, self.bp_col]].corr().iloc[0, 1]
-
-    #         # --- LÄGG TILL TEXT I GRAFEN ---
-    #     ax.text(
-    #         0.05,
-    #         0.95,
-    #         f"r = {corr:.2f}",
-    #         transform=ax.transAxes,
-    #         fontsize=12,
-    #         verticalalignment="top",
-    #         bbox=dict(facecolor="white", alpha=0.6, edgecolor="gray")
-    #     )
-
-    #     ax.set_xlabel(x_col)
-    #     ax.set_ylabel(self.bp_col)
-    #     ax.set_title(title or f"{self.bp_col} vs {x_col}")
-    #     ax.grid(alpha=0.3)
-
-    #     return ax
-    
-
     def plot_bp_scatter_grid(
         self,
         x_cols=None,
         hue: str | None = None,
     ):
         """
-        Rita scatterplots för systoliskt blodtryck mot flera numeriska variabler
-        i ett grid (2 kolumner).
-
-        Exempel:
-            analyzer.plot_bp_scatter_grid(
-                x_cols=["age", "weight", "height", "cholesterol"],
-                hue="sex"
-            )
+        Create a grid of scatterplots for SBP vs multiple numeric variables.
+        Useful for multi-dimensional exploratory analysis.
         """
         if x_cols is None:
             x_cols = ["age", "weight", "height", "cholesterol"]
@@ -432,8 +375,8 @@ class HealthAnalyzer:
 
     def plot_bp_correlation_heatmap(self, cols=None):
         """
-        Plotta korrelations-heatmap där systoliskt BT ligger först.
-        Om cols är None används NUM_COLS från visualization.
+        Plot a correlation heatmap, placing SBP first for interpretation priority.
+        If cols is None, NUM_COLS is used automatically.
         """
         if cols is None:
             cols = ["systolic_bp"] + [c for c in NUM_COLS if c != "systolic_bp"]

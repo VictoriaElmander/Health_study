@@ -3,25 +3,7 @@ import pandas as pd
 from scipy.stats import norm
 
 def ci_prop_normal(prop: float, n: int, level: float = 0.95, clip: bool = True):
-    """
-    Compute a confidence interval for a proportion using the normal approximation.
-    
-    Parameters
-    ----------
-    prop : float
-        Observed proportion (between 0 and 1).
-    n : int
-        Sample size.
-    level : float
-        Confidence level (default: 0.95).
-    clip : bool
-        Clip CI into [0, 1] since proportions cannot be outside the range.
-        
-    Returns
-    -------
-    (lo, hi, sd, z)
-        Lower bound, upper bound, standard error, and z-value.
-    """
+    """Compute a CI for a proportion using the normal approximation."""
     alpha = 1 - level
     z = norm.ppf(1 - alpha/2)
     sd = np.sqrt(prop * (1 - prop) / n)
@@ -36,18 +18,7 @@ def ci_prop_normal(prop: float, n: int, level: float = 0.95, clip: bool = True):
 # Confidence interval using normal approximation
 def ci_norm(series, confidence = 0.95):
     """
-    Confidence interval for the mean using the normal approximation.
-
-    Parameters
-    ----------
-    series : array-like or pd.Series
-    confidence : float between 0 and 1
-
-    Returns
-    -------
-    mean : float
-    (lo, hi) : tuple of CI bounds
-    level : int (e.g. 95)
+    Confidence interval for the mean using normal approximation.
     """
 
     # Validering
@@ -80,7 +51,7 @@ def ci_norm(series, confidence = 0.95):
 # Confidence interval using bootstrap Percentile CI
 def ci_mean_boot_perc(series, confidence=0.95, n_boot=20_000, random_state=42):
     """
-    Bootstrap percentile CI for the mean.
+    Bootstrap percentile CI for the mean (non-parametric).
     """
 
     
@@ -120,7 +91,7 @@ def ci_mean_boot_perc(series, confidence=0.95, n_boot=20_000, random_state=42):
 # Confidence interval using bootstrap BCa
 def ci_mean_boot_bca(series, confidence=0.95, n_boot=20_000, random_state=42):
     """
-    Bootstrap BCa CI for the mean.
+    Bootstrap BCa CI for mean — bias & skewness corrected confidence interval.
     """
     # Validation
     if not (0 < confidence < 1):
@@ -166,16 +137,13 @@ def ci_mean_boot_bca(series, confidence=0.95, n_boot=20_000, random_state=42):
 
     level = int(round(confidence*100))
 
-    return mean_x, (lo, hi), level #boot_mean
+    return mean_x, (lo, hi), level 
 
 
 # Skapa jämförelsetabell för CI på riktiga data
 def ci_methods_table(series, confidence=0.95, n_boot=20_000, random_state=42):
     """
-    Create a comparison table of CI methods for the mean of a given series.
-
-    Returns a DataFrame with columns:
-    ['Metod', 'Medel', 'KI nedre', 'KI övre', 'Nivå (%)']
+    Return a comparison table of CI methods for mean: Normal, Bootstrap Percentile, Bootstrap BCa.
     """
     mean_n, (ci_lo_n, ci_hi_n), level_n = ci_norm(series, confidence)
     mean_bp, (ci_lo_bp, ci_hi_bp), level_bp = ci_mean_boot_perc(series, confidence, n_boot, random_state)

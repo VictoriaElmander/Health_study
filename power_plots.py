@@ -1,4 +1,3 @@
-# power_plots.py
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -15,7 +14,10 @@ def plot_power_vs_effect(
     group_label="Rökare − Icke-rökare",
 ):
     """
-    Plottar power som funktion av effektstorlek (Δ).
+    Plot statistical power as a function of effect size (Δ).
+
+    Shows the simulated power curve, a horizontal target power line, and
+    optionally marks the observed effect and its corresponding power.
     """
     plt.figure(figsize=(6, 4))
     plt.plot(effects, power_values, marker="o", label="Simulerad power (Welch)")
@@ -50,7 +52,10 @@ def plot_power_vs_n(
     alpha=0.05,
 ):
     """
-    Plottar power som funktion av total stickprovsstorlek.
+    Plot statistical power as a function of total sample size (N).
+
+    Shows the simulated power curve, a horizontal target power line, and
+    optionally marks the current study’s N and power for comparison.
     """
     plt.figure(figsize=(6, 4))
     plt.plot(total_ns, power_values, "o-", label="Simulerad power (Welch)")
